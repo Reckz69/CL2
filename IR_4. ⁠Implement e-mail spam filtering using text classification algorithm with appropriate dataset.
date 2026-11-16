@@ -1,0 +1,77 @@
+!pip install pandas scikit-learn requests
+
+import pandas as pd
+import urllib.request
+import zipfile
+import io
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.neighbors import KNeighborsClassifier
+
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix
+)
+
+# Step 1: Load the labeled message dataset
+url = "https://archive.ics.uci.edu/static/public/228/sms+spam+collection.zip"
+
+response = urllib.request.urlopen(url)
+
+with zipfile.ZipFile(io.BytesIO(response.read())) as z:
+    filename = next(
+        name for name in z.namelist()
+        if name.endswith("SMSSpamCollection")
+    )
+
+    df = pd.read_csv(
+        z.open(filename),
+        sep="\t",
+        names=["label", "message"]
+    )
+
+print("Sample Dataset:")
+print(df.head())
+
+# Step 2: Convert labels into categories
+df["label"] = df["label"].map({"ham": 0, "spam": 1})
+
+# Step 3: Split into training and testing data
+X_train, X_test, y_train, y_test = train_test_split(
+    df["message"],
+    df["label"],
+    test_size=0.2,
+    random_state=42,
+    stratify=df["label"]
+)
+
+# Step 4: Extract text features using TF-IDF
+vectorizer = TfidfVectorizer(stop_words="english")
+
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+# Step 5: Train the KNN classifier
+model = KNeighborsClassifier(n_neighbors=5)
+
+model.fit(X_train_tfidf, y_train)
+
+# Step 6: Predict and evaluate
+y_pred = model.predict(X_test_tfidf)
+
+print("\nAccuracy:", round(accuracy_score(y_test, y_pred) * 100, 2), "%")
+
+print("\nClassification Report:")
+print(
+    classification_report(
+        y_test,
+        y_pred,
+        target_names=["Ham", "Spam"],
+        zero_division=0
+    )
+)
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
