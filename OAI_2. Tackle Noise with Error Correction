@@ -1,0 +1,64 @@
+!pip install qiskit qiskit-aer matplotlib
+
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+from qiskit.visualization import plot_histogram
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+# Step 1: Create a quantum circuit
+circuit = QuantumCircuit(3, 3)
+
+# Step 2: Prepare the qubit to be teleported
+circuit.x(0)
+circuit.barrier()
+
+# Step 3: Create an entangled Bell pair
+circuit.h(1)
+circuit.cx(1, 2)
+circuit.barrier()
+
+# Step 4: Perform teleportation operations
+circuit.cx(0, 1)
+circuit.h(0)
+circuit.barrier()
+
+# Step 5: Measure the first two qubits
+circuit.measure(0, 0)
+circuit.measure(1, 1)
+
+# Step 6: Apply correction gates
+with circuit.if_test((circuit.clbits[1], 1)):
+    circuit.x(2)
+
+with circuit.if_test((circuit.clbits[0], 1)):
+    circuit.z(2)
+
+circuit.barrier()
+
+# Step 7: Measure the final qubit
+circuit.measure(2, 2)
+
+# Display the circuit
+print("Quantum Teleportation Circuit:")
+print(circuit.draw(output="text"))
+
+# Step 8: Run the simulation
+backend = AerSimulator()
+compiled_circuit = transpile(circuit, backend)
+result = backend.run(compiled_circuit, shots=1000).result()
+
+# Step 9: Display measurement counts
+counts = result.get_counts()
+
+print("\nQuantum Teleportation Output:")
+print(counts)
+
+# Step 10: Display histogram
+fig = plot_histogram(
+    counts,
+    title="Quantum Teleportation Results"
+)
+
+display(fig)
+plt.show()
