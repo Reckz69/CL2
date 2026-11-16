@@ -1,0 +1,55 @@
+!pip install pgmpy pandas
+
+import pandas as pd
+
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.inference import VariableElimination
+
+# Load the Cleveland Heart Disease dataset
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
+
+columns = [
+    "age", "sex", "cp", "trestbps", "chol", "fbs",
+    "restecg", "thalach", "exang", "oldpeak",
+    "slope", "ca", "thal", "heartdisease"
+]
+
+df = pd.read_csv(url, names=columns, na_values="?")
+df = df.dropna()
+
+# Select variables
+data = df[["cp", "restecg", "heartdisease"]].astype(int)
+
+# Create Bayesian Network
+model = DiscreteBayesianNetwork([
+    ("cp", "heartdisease"),
+    ("restecg", "heartdisease")
+])
+
+# Fit the model using Maximum Likelihood Estimation
+estimator = MaximumLikelihoodEstimator(model, data)
+
+for cpd in estimator.get_parameters():
+    model.add_cpds(cpd)
+
+# Perform inference
+infer = VariableElimination(model)
+
+print("Probability of Heart Disease given evidence: restecg")
+
+print(
+    infer.query(
+        variables=["heartdisease"],
+        evidence={"restecg": 1}
+    )
+)
+
+print("\nProbability of Heart Disease given evidence: cp")
+
+print(
+    infer.query(
+        variables=["heartdisease"],
+        evidence={"cp": 2}
+    )
+)
