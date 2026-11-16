@@ -1,0 +1,40 @@
+!pip install nltk
+
+import nltk
+import re
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
+nltk.download('stopwords', quiet=True)
+
+text = """Natural language processing is interesting.
+It helps computers understand human languages.
+The students are learning and studying NLP."""
+
+# 1. Convert text to lowercase
+text = text.lower()
+print("Lowercase Text:\n", text)
+
+# 2. Tokenization
+tokens = re.findall(r'\b[a-z]+\b', text)
+print("\nTokens:\n", tokens)
+
+# 3. Stop-word removal
+stop_words = set(stopwords.words('english'))
+
+filtered_words = [
+    word for word in tokens
+    if word not in stop_words
+]
+
+print("\nAfter Stop-word Removal:\n", filtered_words)
+
+# 4. Stemming
+stemmer = PorterStemmer()
+
+stemmed_words = [
+    stemmer.stem(word)
+    for word in filtered_words
+]
+
+print("\nAfter Stemming:\n", stemmed_words)
