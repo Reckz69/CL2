@@ -1,0 +1,47 @@
+!pip install qiskit qiskit-aer
+
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+from qiskit.circuit.library import QFT
+
+# Step 1: Initialize 5 qubits and 5 classical bits
+circuit = QuantumCircuit(5, 5)
+
+# Step 2: Prepare the input state
+circuit.x(4)
+circuit.x(2)
+circuit.x(0)
+
+# Step 3: Apply the 5-qubit Quantum Fourier Transform
+qft = QFT(
+    num_qubits=5,
+    approximation_degree=0,
+    do_swaps=True,
+    inverse=False
+)
+
+circuit.compose(qft, inplace=True)
+
+# Step 4: Measure all qubits
+circuit.measure(range(5), range(5))
+
+# Step 5: Display the circuit
+print("5-Qubit Quantum Fourier Transform Circuit:")
+print(circuit.draw(output="text"))
+
+# Step 6: Execute the circuit on a simulator
+backend = AerSimulator()
+compiled_circuit = transpile(circuit, backend)
+result = backend.run(compiled_circuit, shots=1000).result()
+
+# Step 7: Display the QFT output
+counts = result.get_counts()
+
+print("\nQFT Output")
+print("--------------")
+
+for outcome, count in counts.items():
+    print(f"{outcome}: {count}", end="   ")
+
+    if (list(counts.keys()).index(outcome) + 1) % 4 == 0:
+        print()
