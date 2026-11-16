@@ -1,0 +1,52 @@
+!pip install qiskit qiskit-aer matplotlib
+
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+from qiskit.visualization import plot_histogram
+from IPython.display import display
+import matplotlib.pyplot as plt
+
+# Step 1: Create a quantum circuit with 3 qubits
+qc = QuantumCircuit(3, 3)
+
+# Step 2: Apply CNOT gates
+qc.cx(0, 1)
+qc.cx(1, 2)
+
+# Step 3: Apply Hadamard gates
+qc.h(0)
+qc.h(1)
+qc.h(2)
+
+# Step 4: Measure all qubits
+qc.measure([0, 1, 2], [0, 1, 2])
+
+# Step 5: Display the quantum circuit
+print("Quantum Circuit for the 3-Puzzle Demonstration:")
+print(qc.draw(output="text"))
+
+# Step 6: Run the circuit on a simulator
+backend = AerSimulator()
+
+compiled_qc = transpile(qc, backend)
+
+result = backend.run(
+    compiled_qc,
+    shots=1000
+).result()
+
+# Step 7: Display measurement results
+counts = result.get_counts()
+
+print("\nMeasurement Results:")
+print(counts)
+
+# Step 8: Display the histogram
+fig = plot_histogram(
+    counts,
+    title="Measurement Results",
+    figsize=(8, 4)
+)
+
+display(fig)
+plt.show()
