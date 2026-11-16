@@ -1,0 +1,68 @@
+import re
+import nltk
+from nltk.corpus import stopwords
+
+nltk.download('stopwords', quiet=True)
+
+# Step 1: Create a sample text file
+text = """This is the first word.
+This is the second text, Hello! How are you?
+This is the third, this is it now."""
+
+with open("file.txt", "w") as f:
+    f.write(text)
+
+# Step 2: Read the file
+with open("file.txt", "r") as f:
+    lines = f.readlines()
+
+print("Number of lines in file:", len(lines))
+print("\nFile contents:")
+print(lines)
+
+# Step 3: Remove punctuation and convert to lowercase
+cleaned_lines = []
+
+for line in lines:
+    line = re.sub(r"[^\w\s]", "", line)
+    line = line.lower()
+    cleaned_lines.append(line)
+
+print("\nAfter removing punctuation:")
+
+for line in cleaned_lines:
+    print(line)
+
+# Step 4: Tokenize the words
+tokens = [line.split() for line in cleaned_lines]
+
+print("\nTokenized words:")
+print(tokens)
+
+# Step 5: Remove stop words
+stop_words = set(stopwords.words("english"))
+
+filtered_words = []
+
+for words in tokens:
+    filtered_words.append(
+        [word for word in words if word not in stop_words]
+    )
+
+print("\nAfter stop-word removal:")
+print(filtered_words)
+
+# Step 6: Create an inverted index
+inverted_index = {}
+
+for line_no, words in enumerate(filtered_words, start=1):
+    for word in words:
+
+        if word not in inverted_index:
+            inverted_index[word] = []
+
+        if line_no not in inverted_index[word]:
+            inverted_index[word].append(line_no)
+
+print("\nInverted Index:")
+print(inverted_index)
