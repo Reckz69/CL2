@@ -1,0 +1,33 @@
+!pip install qiskit qiskit-aer
+
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+
+# Step 1: Initialize 16 quantum and classical bits
+q = QuantumRegister(16, 'q')
+c = ClassicalRegister(16, 'c')
+
+# Step 2: Create the quantum circuit
+circuit = QuantumCircuit(q, c)
+
+# Step 3: Apply Hadamard gate to all qubits
+circuit.h(q)
+
+# Step 4: Measure all qubits
+circuit.measure(q, c)
+
+# Display the circuit
+print("16-Qubit Random Number Generator Circuit:")
+print(circuit.draw(output="text"))
+
+# Step 5: Execute the circuit using a simulator
+backend = AerSimulator()
+compiled_circuit = transpile(circuit, backend)
+result = backend.run(compiled_circuit, shots=1).result()
+
+# Step 6: Display the random number
+counts = result.get_counts()
+random_number = list(counts.keys())[0]
+
+print("\nRESULT:", counts)
+print("16-Bit Random Number:", random_number)
