@@ -1,0 +1,115 @@
+!pip install pandas numpy matplotlib scikit-learn scipy
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import StandardScaler, normalize
+from sklearn.decomposition import PCA
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import silhouette_score
+
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+# Step 1: Load dataset directly using URL
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00292/Wholesale%20customers%20data.csv"
+
+df = pd.read_csv(url)
+
+print("Dataset:")
+print(df.head())
+
+# Step 2: Select numerical features
+X = df.drop(
+    columns=["Channel", "Region"],
+    errors="ignore"
+)
+
+# Step 3: Handle missing values
+X = X.fillna(X.median())
+
+# Step 4: Standardize and normalize data
+X_scaled = StandardScaler().fit_transform(X)
+
+X_normalized = normalize(X_scaled)
+
+# Step 5: Reduce dimensions using PCA
+pca = PCA(n_components=2)
+
+X_principal = pca.fit_transform(X_normalized)
+
+X_principal = pd.DataFrame(
+    X_principal,
+    columns=["P1", "P2"]
+)
+
+print("\nPCA Data:")
+print(X_principal.head())
+
+# Step 6: Draw dendrogram
+plt.figure(figsize=(8, 5))
+
+linked = linkage(X_principal, method="ward")
+
+dendrogram(
+    linked,
+    truncate_mode="lastp",
+    p=30
+)
+
+plt.title("Visualising the Data")
+plt.xlabel("Data Points / Clusters")
+plt.ylabel("Distance")
+plt.show()
+
+# Step 7: Apply Agglomerative Clustering
+silhouette_scores = []
+
+for k in [2, 3, 4, 5, 6]:
+
+    model = AgglomerativeClustering(n_clusters=k)
+
+    labels = model.fit_predict(X_principal)
+
+    score = silhouette_score(X_principal, labels)
+
+    silhouette_scores.append(score)
+
+    print(f"\nNumber of clusters (k) = {k}")
+    print("Silhouette Score:", round(score, 4))
+
+    plt.figure(figsize=(6, 5))
+
+    plt.scatter(
+        X_principal["P1"],
+        X_principal["P2"],
+        c=labels,
+        cmap="rainbow",
+        s=15
+    )
+
+    plt.title(f"Agglomerative Clustering (k = {k})")
+    plt.xlabel("P1")
+    plt.ylabel("P2")
+    plt.show()
+
+# Step 8: Compare silhouette scores
+k_values = [2, 3, 4, 5, 6]
+
+plt.figure(figsize=(6, 4))
+
+plt.bar(k_values, silhouette_scores)
+
+plt.xlabel("Number of clusters")
+plt.ylabel("Silhouette Score")
+plt.title("Comparison of Clustering Results")
+
+plt.show()
+
+# Step 9: Find optimal number of clusters
+best_k = k_values[np.argmax(silhouette_scores)]
+
+print("\nOptimal number of clusters:", best_k)
+
+# Conclusion
+print("Agglomerative Hierarchical Clustering completed successfully.")
