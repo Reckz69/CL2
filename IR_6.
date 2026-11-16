@@ -1,0 +1,90 @@
+!pip install requests beautifulsoup4 networkx
+
+import requests
+import networkx as nx
+
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
+# Books to Scrape website
+start_url = "https://books.toscrape.com/"
+
+# Create directed graph
+G = nx.DiGraph()
+
+visited = set()
+
+to_visit = [start_url]
+
+max_pages = 10
+
+# Crawl website pages
+while to_visit and len(visited) < max_pages:
+
+    url = to_visit.pop(0)
+
+    if url in visited:
+        continue
+
+    try:
+        response = requests.get(
+            url,
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+
+        response.raise_for_status()
+
+        soup = BeautifulSoup(
+            response.text,
+            "html.parser"
+        )
+
+        visited.add(url)
+
+        G.add_node(url)
+
+        # Extract links from the webpage
+        for link in soup.find_all("a", href=True):
+
+            next_url = urljoin(
+                url,
+                link["href"]
+            )
+
+            # Keep links from Books to Scrape only
+            if next_url.startswith("https://books.toscrape.com/"):
+
+                G.add_edge(url, next_url)
+
+                if next_url not in visited and next_url not in to_visit:
+                    to_visit.append(next_url)
+
+    except requests.RequestException:
+        print("Could not access:", url)
+
+# Calculate PageRank
+if G.number_of_nodes() > 0:
+
+    ranks = nx.pagerank(
+        G,
+        alpha=0.85
+    )
+
+    print("Pages visited:", len(visited))
+
+    print("\nPageRank of webpages:")
+
+    for page, rank in sorted(
+        ranks.items(),
+        key=lambda item: item[1],
+        reverse=True
+    ):
+        print(page, ":", round(rank, 4))
+
+    print("\nMost important webpage:")
+
+    print(max(ranks, key=ranks.get))
+
+else:
+    print("No webpages could be collected.")
