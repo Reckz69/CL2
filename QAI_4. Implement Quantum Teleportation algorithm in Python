@@ -1,0 +1,94 @@
+!pip install qiskit qiskit-aer matplotlib numpy
+
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+from qiskit.visualization import plot_histogram
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Create the quantum simulator
+backend = AerSimulator()
+shots = 1000
+
+# Step 1: Create the original quantum circuit
+qc = QuantumCircuit(3, 3)
+
+# Apply gates as shown in the lab manual
+qc.h(0)
+qc.cx(0, 1)
+qc.cx(0, 2)
+qc.measure([0, 1, 2], [0, 1, 2])
+
+# Step 2: Execute the original circuit
+compiled_qc = transpile(qc, backend)
+result = backend.run(compiled_qc, shots=shots).result()
+counts = result.get_counts()
+
+# Step 3: Create measurement calibration circuits
+calibration_counts = {}
+
+for i in range(8):
+
+    cal = QuantumCircuit(3, 3)
+
+    # Prepare each possible 3-qubit state
+    for q in range(3):
+        if (i >> q) & 1:
+            cal.x(q)
+
+    cal.measure([0, 1, 2], [0, 1, 2])
+
+    compiled_cal = transpile(cal, backend)
+
+    cal_result = backend.run(
+        compiled_cal,
+        shots=shots
+    ).result()
+
+    calibration_counts[i] = cal_result.get_counts()
+
+# Step 4: Build the measurement calibration matrix
+matrix = np.zeros((8, 8))
+
+for prepared in range(8):
+
+    for measured, count in calibration_counts[prepared].items():
+
+        row = int(measured, 2)
+
+        matrix[row, prepared] = count / shots
+
+# Step 5: Apply measurement error mitigation
+observed = np.zeros(8)
+
+for state, count in counts.items():
+    observed[int(state, 2)] = count / shots
+
+mitigated = np.linalg.pinv(matrix) @ observed
+
+# Remove negative probabilities and normalize
+mitigated = np.maximum(mitigated, 0)
+mitigated = mitigated / mitigated.sum()
+
+mitigated_counts = {
+    format(i, '03b'): round(mitigated[i] * shots)
+    for i in range(8)
+}
+
+# Step 6: Display original counts
+print("Original Counts:")
+print(counts)
+
+# Step 7: Display mitigated counts
+print("\nMitigated Counts:")
+print(mitigated_counts)
+
+# Step 8: Plot original and mitigated histograms
+fig = plot_histogram(
+    [counts, mitigated_counts],
+    legend=['Original', 'Mitigated'],
+    title='Original vs Mitigated Measurement Counts'
+)
+
+display(fig)
+plt.show()
